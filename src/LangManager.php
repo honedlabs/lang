@@ -103,7 +103,7 @@ class LangManager
         /** @var string */
         $base = config('lang.lang_path', lang_path());
 
-        return mb_rtrim($base, '/');
+        return rtrim($base, '/');
     }
 
     /**
