@@ -6,7 +6,10 @@ namespace Honed\Lang;
 
 use BackedEnum;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Routing\UrlGenerator;
+use Illuminate\Session\SessionManager;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Session;
 
 class LangManager
 {
@@ -92,9 +95,15 @@ class LangManager
      * @param  string|array<int, string>  $keys
      * @return $this
      */
-    public function using(string $file, string|array $keys): static
+    public function using(string $file, string|array $keys = []): static
     {
-        return $this->use($file)->only($keys);
+        $this->use($file);
+
+        if (! empty($keys)) {
+            $this->only(array_map(fn (string $key) => "{$file}.{$key}", (array) $keys));
+        }
+
+        return $this;
     }
 
     /**
@@ -127,14 +136,6 @@ class LangManager
     }
 
     /**
-     * Get the current locale.
-     */
-    public function getLocale(): string
-    {
-        return $this->app->getLocale();
-    }
-
-    /**
      * Get the supported locales for the application.
      *
      * @return array<int, string|BackedEnum>
@@ -158,9 +159,41 @@ class LangManager
             return false;
         }
 
+        if ($this->usesSession()) {
+            $this->getSession()->put('_lang', $locale);
+        }
+
         $this->app->setLocale($locale);
 
         return true;
+    }
+
+    /**
+     * Get the current locale.
+     */
+    public function getLocale(): string
+    {
+        return $this->app->getLocale();
+    }
+
+    /**
+     * Check if the session is used.
+     */
+    public function usesSession(): bool
+    {
+        return (bool) config('lang.session', true);
+    }
+
+    /**
+     * Register the locale as a default parameter in the URL generator.
+     */
+    public function registerParameter(): string
+    {
+        $locale = $this->getLocale();
+
+        $this->getUrlGenerator()->defaults(['locale' => $locale]);
+
+        return $locale;
     }
 
     /**
@@ -170,5 +203,20 @@ class LangManager
     {
         /** @var string */
         return is_string($locale) ? $locale : $locale->value;
+    }
+
+    /**
+     * Get the session manager from the app.
+     */
+    protected function getSession(): SessionManager
+    {
+        // @phpstan-ignore-next-line offsetAccess.nonOffsetAccessible
+        return $this->app['session'];
+    }
+
+    protected function getUrlGenerator(): UrlGenerator
+    {
+        // @phpstan-ignore-next-line offsetAccess.nonOffsetAccessible
+        return $this->app['url'];
     }
 }

@@ -91,7 +91,7 @@ it('gets only some keys with locale', function () {
 
 it('gets only some keys with using', function () {
     expect($this->lang)
-        ->using('greetings', 'greetings.greeting.morning')->toBe($this->lang)
+        ->using('greetings', 'greeting.morning')->toBe($this->lang)
         ->getTranslations()->toEqualCanonicalizing([
             'greetings' => [
                 'greeting' => [
@@ -99,4 +99,21 @@ it('gets only some keys with using', function () {
                 ],
             ],
         ]);
+});
+
+it('does not require keys to be specified', function () {
+    expect($this->lang)
+        ->using('greetings')->toBe($this->lang)
+        ->getTranslations()->toEqualCanonicalizing([
+            'greetings' => $this->greetings,
+        ]);
+});
+
+it('registers the locale as a default parameter', function () {
+    expect($this->lang)
+        ->registerParameter()->toBe(app()->getLocale())
+        ->locale('es')->toBeTrue()
+        ->registerParameter()->toBe('es')
+        ->locale('fr')->toBeFalse()
+        ->registerParameter()->toBe('es');
 });
